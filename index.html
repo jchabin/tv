@@ -1,0 +1,225 @@
+<video id="player" autoplay muted></video>
+<div id="static"></div>
+<div id="overlay">
+  <div id="channel"></div>
+  <div id="subtitles"></div>
+</div>
+<img src="remote.png" id="remote">
+<div id="click">CLICK TO UNMUTE</div>
+<style>
+  @font-face {
+    font-family: "VCR";
+    src:
+      url("/VCR_OSD.ttf") format("TrueType");
+  }
+  * {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  body {
+    background: black;
+  }
+  #player {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50dvw;
+    aspect-ratio: 16/9;
+    box-shadow: 0 0 8dvw rgba(255, 255, 255, .1);
+  }
+  #static {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50dvw;
+    aspect-ratio: 16/9;
+    background-image: url("static.gif");
+    background-size: cover;
+    background-position: center;
+  }
+  #overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50dvw;
+    aspect-ratio: 16/9;
+  }
+  #channel {
+    position: absolute;
+    top: 1dvw;
+    right: 1dvw;
+    display: inline-block;
+    background: black;
+    color: #0f0;
+    font-family: VCR, monospace;
+    font-size: 3dvw;
+  }
+  #subtitles {
+    position: absolute;
+    bottom: 1dvw;
+    left: 1dvw;
+    right: 1dvw;
+  }
+  .subtitle {
+    color: white;
+    font-family: VCR, monospace;
+    font-size: 2dvw;
+  }
+  #remote {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 30dvmin;
+    cursor: pointer;
+    transition: transform .2s;
+    transform-origin: bottom center;
+  }
+  #remote:hover {
+    transform: scale(1.2);
+  }
+  #click {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,.75);
+    color: white;
+    font-size: 10dvmin;
+    line-height: 100dvh;
+    text-align: center;
+    font-family: VCR, monospace;
+  }
+</style>
+<script type="module">
+  import { joinRoom, selfId } from "https://esm.run/trystero";
+
+  const ADMIN = !location.href.match(/\?r=.+$/);
+  const ID = ADMIN ? crypto.randomUUID() : location.href.match(/\?r=(.+$)/)[1];
+  if(ADMIN) {
+    history.replaceState({}, "", location.origin.replace(/\/?$/, `?r=${ID}`));
+  }
+
+  let hasControl = ADMIN, currentChannel = -1;
+
+  console.log(ADMIN, ID);
+
+  const TIMEOUT = 5000;
+  const SUBTITLE_TIME = 3000;
+
+  const room = joinRoom({appId: "jchabin-tv"}, ID);
+  const [sendChannel, getChannel] = room.makeAction("channel");
+
+  room.onPeerJoin(id => {
+    console.log(id);
+
+    if(currentChannel >= 0) sendChannel(currentChannel);
+  });
+
+  getChannel(n => {
+    if(n == currentChannel) return;
+
+    hasControl = false;
+    showChannel(n);
+  });
+
+  let CHANNELS = [];
+  fetch("https://iptv-org.github.io/api/streams.json").then(e => e.json()).then(e => {
+  	CHANNELS = e;
+  	console.log(e);
+  });
+
+  const player = document.getElementById("player");
+  const channel = document.getElementById("channel");
+  const staticElem = document.getElementById("static");
+  function randomChannel() {
+    if(hasControl) {
+      const n = Math.floor(CHANNELS.length * Math.random());
+      sendChannel(n);
+      showChannel(n);
+    }
+  }
+
+  let tt, lt;
+  function showChannel(n) {
+    if(tt) clearTimeout(tt);
+    if(lt) clearTimeout(lt);
+
+    currentChannel = n;
+    channel.innerHTML = `CH ${n}`;
+    channel.style.display = "block";
+    player.src = CHANNELS[n].url.replaceAll("http://", "https://");
+  	console.log("NOW TRYING", player.src);
+    staticElem.style.display = "block";
+
+    if(hasControl) tt = setTimeout(randomChannel, TIMEOUT);
+  }
+
+  player.addEventListener("loadeddata", () => {
+    clearTimeout(tt);
+    staticElem.style.display = "none";
+    lt = setTimeout(() => {
+      channel.style.display = "none";
+    }, 1000);
+  });
+  player.addEventListener("error", randomChannel);
+
+  document.getElementById("remote").onclick = () => {
+    hasControl = true;
+    randomChannel();
+  }
+
+  const clickReceiver = document.getElementById("click");
+  clickReceiver.onclick = () => {
+    player.muted = false;
+
+    clickReceiver.style.display = "none";
+  }
+
+  const activeText = {};
+  const [sendText, getText] = room.makeAction("text");
+
+  window.onkeypress = e => {
+    if(e.key.length == 1) {
+      sendText(e.key);
+      handleText(e.key, selfId);
+    } else if(e.code == "Enter") {
+      sendText("\n");
+      handleText("\n", selfId);
+    }
+  }
+
+  function handleText(text, id) {
+    const hash = id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    if(activeText[id]) {
+      clearTimeout(activeText[id].timeout);
+      activeText[id].text += text;
+      activeText[id].elem.innerHTML = `<span style="background:black">${activeText[id].text.replaceAll("<", "&lt;").replaceAll("\n", "<br/>")}</span>`;
+      activeText[id].timeout = setTimeout(() => {
+        activeText[id].elem.remove();
+        delete activeText[id];
+      }, SUBTITLE_TIME);
+    } else {
+      const subt = document.createElement("DIV");
+      subt.innerHTML = `<span style="background:black">${text.replaceAll("<", "&lt;").replaceAll("\n", "<br/>")}</span>`;
+      subt.className = "subtitle";
+      subt.style.color = `hsl(${hash % 360}, 100%, 50%)`;
+      document.getElementById("subtitles").appendChild(subt);
+
+      activeText[id] = {
+        text: text,
+        elem: subt,
+        timeout: setTimeout(() => {
+          activeText[id].elem.remove();
+          delete activeText[id];
+        }, SUBTITLE_TIME)
+      }
+    }
+  }
+
+  getText(handleText);
+</script>
