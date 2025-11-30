@@ -10,7 +10,7 @@
   @font-face {
     font-family: "VCR";
     src:
-      url("/VCR_OSD.ttf") format("TrueType");
+      url("VCR_OSD.ttf") format("TrueType");
   }
   * {
     margin: 0;
@@ -101,7 +101,7 @@
   const ADMIN = !location.href.match(/\?r=.+$/);
   const ID = ADMIN ? crypto.randomUUID() : location.href.match(/\?r=(.+$)/)[1];
   if(ADMIN) {
-    history.replaceState({}, "", location.href.replace(/\/?$/, `?r=${ID}`));
+    history.replaceState({}, "", location.href + `?r=${ID}`);
   }
 
   let hasControl = ADMIN, currentChannel = -1;
