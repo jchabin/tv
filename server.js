@@ -1,3 +1,7 @@
+// I use this script everywhere. Just hosts http server on port 80 to serve
+// static webpage content. I also usually use it as a starting point to add
+// actual server logic into later, if needed.
+
 const express = require("express");
 const os = require("os");
 
