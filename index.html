@@ -1,16 +1,20 @@
-<title id="title">TV</title>
+<title id="title">0000</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="manifest" href="site.webmanifest">
 
-<video id="player" autoplay muted playsinline></video>
-<div id="static"></div>
-<div id="overlay">
-  <div id="channel"></div>
-  <div id="subtitles"></div>
+<div id="videoelems">
+  <video id="player" autoplay muted playsinline></video>
+  <div id="static"></div>
+  <div id="overlay">
+    <div id="channel"></div>
+    <div id="subtitles"></div>
+  </div>
 </div>
+
 <img src="remote.png" id="remote">
 <div id="click">CLICK TO UNMUTE</div>
 <style>
@@ -75,6 +79,7 @@
     color: white;
     font-family: VCR, monospace;
     font-size: 2dvw;
+    word-break: break-all;
   }
   #remote {
     position: absolute;
@@ -84,9 +89,11 @@
     cursor: pointer;
     transition: transform .2s;
     transform-origin: bottom center;
+    user-select: none;
+    user-drag: none;
   }
-  #remote:hover {
-    transform: scale(1.2);
+  #remote:active {
+    transform: scale(1.1);
   }
   #click {
     position: fixed;
@@ -100,6 +107,14 @@
     line-height: 100dvh;
     text-align: center;
     font-family: VCR, monospace;
+  }
+  #videoelems {
+    /* position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    filter: blur(0.05dvw); */
   }
 </style>
 <script type="module">
@@ -159,7 +174,7 @@
     currentChannel = n;
     channel.innerHTML = `CH ${n}`;
     channel.style.display = "block";
-    document.getElementById("title").innerHTML = `CH ${n}`;
+    document.getElementById("title").innerHTML = n;
     player.src = CHANNELS[n].url.replaceAll("http://", "https://");
   	console.log("NOW TRYING", player.src);
     staticElem.style.display = "block";
