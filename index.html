@@ -201,7 +201,7 @@
   import { joinRoom, selfId } from "https://esm.run/trystero";
 
   const ADMIN = !location.href.match(/\?r=.+$/);
-  const ID = ADMIN ? crypto.randomUUID() : location.href.match(/\?r=(.+$)/)[1];
+  const ID = ADMIN ? crypto.randomUUID ? crypto.randomUUID() : ("local_" + Math.random()).replaceAll("0.",  "") : location.href.match(/\?r=(.+$)/)[1];
   if(ADMIN) {
     history.replaceState({}, "", location.href + `?r=${ID}`);
   }
@@ -335,6 +335,8 @@
       player.requestFullscreen();
     } else if(player.webkitRequestFullscreen) {
       player.webkitRequestFullscreen();
+    } else if(player.webkitEnterFullScreen) {
+       player.webkitEnterFullScreen();
     } else if(player.msRequestFullscreen) {
       player.msRequestFullscreen();
     }
