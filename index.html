@@ -121,6 +121,7 @@
     transform-origin: bottom center;
     user-select: none;
     user-drag: none;
+    clip-path: inset(0 20% 0 10%);
   }
   #remote:active {
     transform: scale(1.1);
@@ -273,6 +274,9 @@
   player.addEventListener("error", () => {
     if(et) clearTimeout(et);
     et = setTimeout(randomChannel, 1000);
+  });
+  player.addEventListener("pause", () => {
+    player.play();
   });
 
   document.getElementById("remote").onclick = () => {
