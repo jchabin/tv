@@ -1,5 +1,7 @@
 # Random TV Shows
 
+[Try it here.](https://jchabin.github.io/tv)
+
 Watch random TV shows from around the world with your friends. Click the remote
 to change the channel.
 
