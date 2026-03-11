@@ -233,12 +233,19 @@
     display: block;
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script type="module">
   import { joinRoom, selfId } from "https://esm.run/trystero";
 
   const params = new URLSearchParams(window.location.search);
   const player = document.getElementById("player");
   const clickReceiver = document.getElementById("click");
+
+  const hls = new Hls();
+  let useHlsJs = !player.canPlayType("application/vnd.apple.mpegurl");
+  if(useHlsJs) {
+    hls.attachMedia(player);
+  }
 
   if(params.get("c")) {
     const chat = params.get("c");
@@ -342,7 +349,13 @@
     channel.innerHTML = `CH ${n}`;
     channel.style.display = "block";
     document.getElementById("title").innerHTML = n;
-    player.src = CHANNELS[n].url.replaceAll("http://", "https://");
+
+    const src = CHANNELS[n].url.replaceAll("http://", "https://");
+    if(useHlsJs) {
+      hls.loadSource(src);
+    } else {
+      player.src = src;
+    }
   	console.log("NOW TRYING", player.src);
     staticElem.style.display = "block";
 
@@ -357,9 +370,10 @@
       channel.style.display = "none";
     }, 1000);
   });
-  player.addEventListener("error", () => {
+  player.addEventListener("error", err => {
     if(et) clearTimeout(et);
     et = setTimeout(randomChannel, 1000);
+    console.log(err);
   });
   player.addEventListener("pause", () => {
     player.play();
