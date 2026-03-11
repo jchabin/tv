@@ -238,6 +238,7 @@
 
   const params = new URLSearchParams(window.location.search);
   const player = document.getElementById("player");
+  const clickReceiver = document.getElementById("click");
 
   if(params.get("c")) {
     const chat = params.get("c");
@@ -277,7 +278,11 @@
       awaitingPong = false;
     });
 
-    player.muted = false;
+    if(params.get("m")) {
+      clickReceiver.style.display = "block";
+    } else {
+      player.muted = false;
+    }
   } else {
     document.getElementById("twitch").disabled = true;
   }
@@ -365,7 +370,6 @@
     randomChannel();
   }
 
-  const clickReceiver = document.getElementById("click");
   clickReceiver.onclick = () => {
     player.muted = false;
 
