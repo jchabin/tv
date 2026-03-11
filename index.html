@@ -43,6 +43,8 @@
   icons are from <a href="https://feathericons.com/">Feather</a>.
 </div>
 
+<div id="hint">USE <span style="color: #f00">!REMOTE</span> TO CHANGE CHANNEL</div>
+
 <img src="remote.png" id="remote">
 <svg id="fullscreen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize-2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
 <div id="click">CLICK TO UNMUTE</div>
@@ -197,14 +199,94 @@
   #fullscreen:hover {
     color: white;
   }
+  #hint {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    left: 15dvw;
+    right: 15dvw;
+    color: white;
+    background: black;
+    font-family: VCR, monospace;
+    font-size: max(2dvw, 24px);;
+    word-break: break-all;
+    text-align: center;
+  }
+</style>
+<style id="twitch">
+  #click, #remote, #info, #fullscreen {
+    display: none;
+  }
+  #player, #static, #overlay {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+  }
+  #channel {
+    font-size: 5dvw;
+    top: 1.7dvw;
+    right: 1.7dvw;
+  }
+  #hint {
+    display: block;
+  }
 </style>
 <script type="module">
   import { joinRoom, selfId } from "https://esm.run/trystero";
 
-  const ADMIN = !location.href.match(/\?r=.+$/);
-  const ID = ADMIN ? crypto.randomUUID ? crypto.randomUUID() : ("local_" + Math.random()).replaceAll("0.",  "") : location.href.match(/\?r=(.+$)/)[1];
+  const params = new URLSearchParams(window.location.search);
+  const player = document.getElementById("player");
+
+  if(params.get("c")) {
+    const chat = params.get("c");
+    let socket = new WebSocket("wss://irc-ws.chat.twitch.tv/"),
+        awaitingPong = false;
+
+    const socketOpen = e => {
+      socket.send("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership");
+      socket.send("PASS SCHMOOPIIE");
+      socket.send("NICK justinfan18858");
+    };
+    socket.addEventListener("open", socketOpen);
+
+    setInterval(() => {
+      if(awaitingPong) {
+        socket = new WebSocket("wss://irc-ws.chat.twitch.tv/");
+        socket.addEventListener("open", socketOpen);
+      }
+
+      socket.send("PING");
+      awaitingPong = true;
+    }, 10000);
+
+    socket.addEventListener("message", e => {
+      if(e.data.match(/^:tmi.twitch.tv 001 justinfan18858 :Welcome, GLHF!/)) {
+        socket.send("JOIN #" + chat);
+      }
+
+      console.log(e.data);
+
+      const username = (e.data.match(/display-name=([^;]+)/) ?? [])[1];
+      if(e.data.toLowerCase().includes("!remote")) {
+        hasControl = true;
+        randomChannel();
+      }
+
+      awaitingPong = false;
+    });
+
+    player.muted = false;
+  } else {
+    document.getElementById("twitch").disabled = true;
+  }
+
+  const ADMIN = !params.get("r");
+  const ID = ADMIN ? crypto.randomUUID ? crypto.randomUUID() : ("local_" + Math.random()).replaceAll("0.",  "") : params.get("r");
   if(ADMIN) {
-    history.replaceState({}, "", location.href + `?r=${ID}`);
+    params.set("r", ID);
+    history.replaceState({}, "", location.origin + location.pathname + "?" + params);
   }
 
   let hasControl = ADMIN, currentChannel = -1;
@@ -236,7 +318,6 @@
   	console.log(e);
   });
 
-  const player = document.getElementById("player");
   const channel = document.getElementById("channel");
   const staticElem = document.getElementById("static");
   function randomChannel() {
