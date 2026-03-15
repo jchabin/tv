@@ -251,7 +251,6 @@
 
   const hls = new Hls();
   let useHlsJs = !player.canPlayType("application/vnd.apple.mpegurl");
-  useHlsJs = true;
   if(useHlsJs) {
     hls.attachMedia(player);
   }
