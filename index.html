@@ -369,6 +369,8 @@
     lt = setTimeout(() => {
       channel.style.display = "none";
     }, 1000);
+
+    player.play();
   });
   player.addEventListener("error", err => {
     if(et) clearTimeout(et);
