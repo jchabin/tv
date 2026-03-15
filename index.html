@@ -251,6 +251,7 @@
 
   const hls = new Hls();
   let useHlsJs = !player.canPlayType("application/vnd.apple.mpegurl");
+  useHlsJs = true;
   if(useHlsJs) {
     hls.attachMedia(player);
   }
@@ -288,6 +289,24 @@
       if(e.data.toLowerCase().includes("!remote")) {
         hasControl = true;
         randomChannel();
+      }
+
+      if(e.data.toLowerCase().includes("!channel")) {
+        hasControl = true;
+        const match = e.data.toLowerCase().match(/!channel (\d+)/);
+
+        if(match) {
+          const requestedChannel = parseInt(e.data.toLowerCase().match(/!channel (\d+)/)[1]);
+
+          if(requestedChannel < CHANNELS.length) {
+            sendChannel(requestedChannel);
+            showChannel(requestedChannel);
+          } else {
+            randomChannel();
+          }
+        } else {
+          randomChannel();
+        }
       }
 
       awaitingPong = false;
