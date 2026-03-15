@@ -1,0 +1,319 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>TV Guide</title>
+<div id="channels"></div>
+<div id="title">
+  TV Guide
+  <svg id="searchbutton" onclick="toggleSearch()" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+  <div id="time">12:00am</div>
+</div>
+<input id="search" autocomplete="off" placeholder="Search..."></input>
+
+<div style="visibility:hidden">
+  <div class="channel" id="test">
+    <div class="number">0</div>
+    <div class="cname"><span>0</span><span class="dim">0</span></div>
+    <div class="quality">HD</div>
+  </div>
+</div>
+
+<style>
+  @font-face {
+    font-family: "Frutiger";
+    src:
+      url("Frutiger.ttf") format("TrueType");
+  }
+  * {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  body {
+    width: 100dvw;
+    height: 100dvh;
+    background: #0a1e40;
+    overflow: hidden;
+  }
+  #title {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: linear-gradient(#0a1e40, #0e1037);
+    color: #e8ff9b;
+    font: 24px Frutiger, Arial;
+    padding: 16px;
+    /* padding-left: 102px; */
+    box-sizing: border-box;
+    text-shadow: 0 2px 2px #000113;
+    border-bottom: 2px solid #f5fdff;
+  }
+  #time {
+    float: right;
+    color: #f5fdff;
+  }
+  #channels {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .channel {
+    width: 100%;
+    background: #0a1e40;
+    border-top: 2px solid #f5fdff;
+    border-bottom: none;
+    color: #f5fdff;
+    font: 24px Frutiger, Arial;
+    line-height: 22px;
+    text-shadow: 0 2px 2px #000113;
+    vertical-align: middle;
+    display: flex;
+    flex-wrap: nowrap;
+    box-sizing: border-box;
+  }
+  .channel.alt {
+    background: #0e1037;
+  }
+  .number {
+    color: #e8ff9b;
+    border-right: 2px solid #f5fdff;
+    padding: 4px;
+    padding-right: 8px;
+    margin-right: 8px;
+    display: inline-block;
+    line-height: 48px;
+    height: 48px;
+    width: 80px;
+    text-align: right;
+  }
+  .cname {
+    display: inline-block;
+    max-height: 44px;
+    /* padding: 4px;
+    padding-left: 0; */
+    flex: 1;
+    align-self: center;
+  }
+  .dim {
+    color: #73758a;
+  }
+  .quality {
+    color: #0a1e40;
+    background: #f5fdff;
+    padding: 2px;
+    align-self: center;
+    font-size: 16px;
+    margin: 8px;
+    border-radius: 4px;
+    text-shadow: none;
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+  }
+  #searchbutton {
+    float: right;
+    margin-left: 16px;
+    color: #f5fdff;
+    cursor: pointer;
+  }
+  #search {
+    color: #f5fdff;
+    background: #0e1037;
+    position: fixed;
+    top: 62px;
+    left: 0;
+    right: 0;
+    font: 24px Frutiger, Arial;
+    padding: 8px;
+    border: none;
+    border-bottom: 2px solid #f5fdff;
+    outline: none;
+    display: none;
+  }
+</style>
+<script>
+  const EXTRA = 5;
+  let CHANNELS = [], scrollPos = 0, scrollVel = 0, cachedScrollPos = 0;
+  function getChannels() {
+    fetch("https://iptv-org.github.io/api/streams.json").then(e => e.json()).then(e => {
+      if(CHANNELS.length == 0) {
+        CHANNELS = e;
+        scrollPos = Math.floor(Math.random() * CHANNELS.length);
+        frame();
+        console.log(e);
+      } else {
+        CHANNELS = e;
+      }
+    });
+  }
+  setInterval(getChannels, 5 * 60 * 1000);
+
+  getChannels();
+
+  let searchPhrase = "";
+
+  const QUALITIES = ["SD", "HD", "FHD", "UHD", "4K", "4KHDR"];
+  const Q_LEV = {
+    480: "SD",
+    720: "HD",
+    1080: "FHD",
+    2160: "4K"
+  }
+
+  const channels = document.getElementById("channels");
+
+  let lsp = -1;
+  let lt = Date.now();
+  function frame() {
+    requestAnimationFrame(frame);
+
+    let nt = Date.now();
+    let d = nt - lt;
+    lt = nt;
+
+    scrollPos += scrollVel * d / 1000;
+    scrollVel *= Math.pow(0.5, d / 500);
+
+    const ENTRY_HEIGHT = document.getElementById("test").clientHeight;
+
+    if(channels.children.length != Math.floor(window.innerHeight / ENTRY_HEIGHT) + EXTRA) {
+      let txt = "";
+
+      for(let i = 0; i < Math.floor(window.innerHeight / ENTRY_HEIGHT) + EXTRA; i++) {
+        txt += `
+        <div class="channel">
+          <div class="number"></div>
+          <div class="cname"><span></span><span class="dim"></span></div>
+          <div class="quality"></div>
+        </div>`;
+      }
+
+      channels.innerHTML = txt;
+    }
+
+    const SEARCHED_CHANNELS = CHANNELS.map((c, i) => {return {index: i, ...c}}).filter(c =>
+      searchPhrase == "" || (c.title ?? "").toLowerCase().includes(searchPhrase) || (c.channel ?? "").toLowerCase().includes(searchPhrase) || (c.index + "").includes(searchPhrase)
+    );
+
+
+    scrollPos = SEARCHED_CHANNELS.length ? (scrollPos + SEARCHED_CHANNELS.length) % SEARCHED_CHANNELS.length : 0;
+
+    if(SEARCHED_CHANNELS.length == 0) {
+      channels.style.display = "none";
+    } else {
+      channels.style.display = "block";
+      for(let i = 0; i < Math.floor(window.innerHeight / ENTRY_HEIGHT) + EXTRA; i++) {
+        const c = (i + Math.floor(scrollPos) - 1 + SEARCHED_CHANNELS.length) % SEARCHED_CHANNELS.length;
+        const ch = SEARCHED_CHANNELS[c].channel, ti = SEARCHED_CHANNELS[c].title, fe = SEARCHED_CHANNELS[c].feed, qu = SEARCHED_CHANNELS[c].quality;
+        channels.children[i].children[0].innerText = SEARCHED_CHANNELS[c].index;
+        if(ch && ti) {
+          channels.children[i].children[1].children[0].innerText = ti + " - ";
+          channels.children[i].children[1].children[1].innerText = ch;
+        } else if(ti) {
+          channels.children[i].children[1].children[0].innerText = ti;
+          channels.children[i].children[1].children[1].innerText = "";
+        } else {
+          channels.children[i].children[1].children[0].innerText = ch;
+          channels.children[i].children[1].children[1].innerText = "";
+        }
+        if((i + Math.floor(scrollPos) - 1 + SEARCHED_CHANNELS.length) % 2 == 0) {
+          channels.children[i].classList.add("alt");
+        } else {
+          channels.children[i].classList.remove("alt");
+        }
+
+        const feed = QUALITIES.includes(fe) ? fe : undefined;
+        const quality = qu ? parseInt((qu.match(/\d+/) ?? ["0"])[0]) : 0;
+
+        channels.children[i].children[2].style.display = "none";
+        if(feed) {
+          channels.children[i].children[2].style.display = "block";
+          channels.children[i].children[2].innerText = feed;
+        } else if(quality) {
+          let max = 0;
+          for(let q in Q_LEV) {
+            if(quality >= q && q > max) {
+              max = q;
+            }
+          }
+          if(max) {
+            channels.children[i].children[2].style.display = "block";
+            channels.children[i].children[2].innerText = Q_LEV[max];
+          }
+        }
+      }
+
+      channels.style.top = -Math.floor(ENTRY_HEIGHT * (scrollPos % 1)) + "px";
+    }
+
+    document.getElementById("time").innerText = (new Date()).toLocaleString("en-US", {hour: "2-digit", minute: "2-digit", hour12: true}).replace(" ", "").toLowerCase();
+  }
+
+  function sscroll(d) {
+    const ENTRY_HEIGHT = document.getElementById("test").clientHeight;
+    scrollPos = scrollPos + d / ENTRY_HEIGHT;
+  }
+
+  window.onwheel = e => {
+    sscroll(e.deltaY);
+  }
+
+  const touches = {};
+
+  window.ontouchstart = e => {
+    scrollVel = 0;
+    lastScroll = 0;
+    for(let touch of e.changedTouches) {
+      touches[touch.identifier] = touch;
+    }
+  }
+
+  let lastScroll = 0;
+  window.ontouchmove = (e, end) => {
+    scrollVel = 0;
+    lastScroll = 0;
+    for(let touch of e.changedTouches) {
+      sscroll(touches[touch.identifier].clientY - touch.clientY);
+      lastScroll += touches[touch.identifier].clientY - touch.clientY;
+      touches[touch.identifier] = touch;
+    }
+  }
+
+  window.ontouchend = e => {
+    scrollVel = lastScroll;
+    for(let touch of e.changedTouches) {
+      delete touches[touch.identifier];
+    }
+  }
+
+  let searchOpen = false;
+  const search = document.getElementById("search");
+  function toggleSearch() {
+    if(searchOpen) {
+      search.blur();
+      search.style.display = "none";
+      if(searchPhrase != "") {
+        scrollPos = cachedScrollPos;
+      }
+      searchPhrase = "";
+      searchOpen = false;
+    } else {
+      search.style.display = "block";
+      search.focus();
+      if(search.value != "") {
+        cachedScrollPos = scrollPos;
+      }
+      searchPhrase = search.value;
+      searchOpen = true;
+    }
+  }
+
+  search.onkeyup = () => {
+    if(searchPhrase == "" && search.value != "") {
+      cachedScrollPos = scrollPos;
+    } else if(searchPhrase != "" && search.value == "") {
+      scrollPos = cachedScrollPos;
+    }
+    searchPhrase = search.value;
+  }
+</script>
