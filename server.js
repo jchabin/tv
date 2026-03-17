@@ -1,9 +1,6 @@
-// I use this script everywhere. Just hosts http server on port 80 to serve
-// static webpage content. I also usually use it as a starting point to add
-// actual server logic into later, if needed.
-
 const express = require("express");
 const os = require("os");
+const { Readable } = require("stream");
 
 var LAN_ADDRESS = "ERROR";
 var netInt = os.networkInterfaces();
@@ -19,5 +16,21 @@ ip: for(n in netInt){
 
 const app = express();
 app.use(express.static(__dirname));
+
+app.get("/vproxy", (req, res) => {
+  fetch(req.query.url, {redirect: "manual"}).then(r => {
+    const forwardHeaders = new Headers(r.headers);
+    forwardHeaders.delete("content-length");
+    forwardHeaders.delete("content-encoding");
+    if(forwardHeaders.get("location")) {
+      forwardHeaders.set("location", "http://localhost/vproxy?url=" + encodeURIComponent(forwardHeaders.get("location")));
+    }
+    res.setHeaders(forwardHeaders);
+    res.status(r.status);
+    Readable.fromWeb(r.body).pipe(res);
+  }).catch(e => {
+    res.sendStatus(400);
+  });
+});
 
 app.listen(80);

@@ -216,7 +216,7 @@
   #guide {
     position: absolute;
     bottom: 0;
-    right: 0;
+    left: 0;
     display: none;
     max-width: 15dvw;
   }
@@ -249,10 +249,56 @@
   const player = document.getElementById("player");
   const clickReceiver = document.getElementById("click");
 
-  const hls = new Hls();
-  let useHlsJs = !player.canPlayType("application/vnd.apple.mpegurl");
+  const IS_LOCAL = location.host.includes("localhost");
+  const PROXY_URL = "http://localhost/vproxy?url=";
+
+  const defaultLoader = Hls.DefaultConfig.loader;
+  class proxyFloader extends defaultLoader {
+    constructor(config) {
+      super(config);
+    }
+
+    load(context, config, callbacks) {
+      const url = context.url;
+
+      const newContext = {
+        ...context,
+        url: PROXY_URL + encodeURIComponent(url)
+      };
+      const newCallbacks = {
+        ...callbacks,
+        onSuccess: (response, stats, context, networkDetails) => {
+          if(response.url && response.url.includes(PROXY_URL)) {
+            response.url = decodeURIComponent(response.url.replace(PROXY_URL, ""));
+          }
+          if(context.url && context.url.includes(PROXY_URL)) {
+            context.url = decodeURIComponent(context.url.replace(PROXY_URL, ""));
+          }
+          if(context.frag && context.frag._url.includes(PROXY_URL)) {
+            context.frag._url = decodeURIComponent(context.frag._url.replace(PROXY_URL, ""));
+          }
+          if(networkDetails.responseUrl && networkDetails.responseUrl.includes(PROXY_URL)) {
+            networkDetails.responseUrl = decodeURIComponent(networkDetails.responseUrl.replace(PROXY_URL, ""));
+          }
+          callbacks.onSuccess(response, stats, context, networkDetails)
+        },
+        onTimeout: (stats, context, networkDetails) => {
+          callbacks.onTimeout(stats, context, networkDetails)
+        }
+      }
+      super.load(newContext, config, newCallbacks);
+    }
+  }
+
+  const hls = new Hls(IS_LOCAL ? {
+    loader: proxyFloader
+  } : {});
+
+  const useHlsJs = !player.canPlayType("application/vnd.apple.mpegurl") || IS_LOCAL;
+
   if(useHlsJs) {
     hls.attachMedia(player);
+    console.log("HLS enabled");
   }
 
   if(params.get("c")) {
@@ -281,8 +327,6 @@
       if(e.data.match(/^:tmi.twitch.tv 001 justinfan18858 :Welcome, GLHF!/)) {
         socket.send("JOIN #" + chat);
       }
-
-      console.log(e.data);
 
       const username = (e.data.match(/display-name=([^;]+)/) ?? [])[1];
       if(e.data.toLowerCase().includes("!remote")) {
@@ -324,6 +368,10 @@
     if(params.get("guide") == "1") {
       document.getElementById("guide").style.display = "block";
       document.getElementById("hint").innerHTML = `USE <span style="color: #f00">!CHANNEL ####</span> TO CHANGE CHANNEL<br/>QR CODE HAS TV GUIDE`;
+
+      if(!IS_LOCAL) {
+        document.getElementById("guide").src = "qrcode-warn.svg";
+      }
     }
   } else {
     document.getElementById("twitch").disabled = true;

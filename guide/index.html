@@ -16,6 +16,11 @@
   </div>
 </div>
 
+<div id="warn">
+  Warning: This instance is <b>not</b> using a proxy, which means most channels
+  will fail to load.
+</div>
+
 <style>
   @font-face {
     font-family: "Frutiger";
@@ -127,6 +132,22 @@
     padding: 8px;
     border: none;
     border-bottom: 2px solid #f5fdff;
+    text-shadow: 0 2px 2px #000113;
+    outline: none;
+    display: none;
+  }
+  #warn {
+    color: #fa2828;
+    background: #0e1037;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font: 16px Frutiger, Arial;
+    padding: 8px;
+    border: none;
+    border-top: 2px solid #f5fdff;
+    text-shadow: 0 2px 2px #000113;
     outline: none;
     display: none;
   }
@@ -149,6 +170,10 @@
   setInterval(getChannels, 5 * 60 * 1000);
 
   getChannels();
+
+  if(location.search.includes("warn=1")) {
+    document.getElementById("warn").style.display = "block";
+  }
 
   let searchPhrase = "";
 

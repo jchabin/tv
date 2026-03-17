@@ -18,3 +18,23 @@ https://jchabin.github.io/tv/?c=TWITCH_USERNAME
 ```
 This will create a session which can be added as an OBS browser source, and will
 allow your chat to change the channel by typing `!remote`.
+
+Some additional query params can be added as well:
+
+* `hint` - Can be used to disable the hint on the bottom of the screen with `hint=0`
+* `muted` - Can be used to re-add the "click to unmute" dialogue even when in
+OBS, which can be useful if having issues getting audio to work from OBS with `muted=1`
+* `guide` - Setting `guide=1` adds a QR code to a channel guide, and lets
+chatters use the command `!channel N` to change to a specific channel. It is
+*highly* recommended that this is only when running the proxy locally, as most
+of the channels will fail to load due to CORS issues without a proxy.
+
+## Running locally
+
+Run the server and proxy locally with
+```
+npm install && node server
+```
+Then the website can be accessed at `localhost`, and OBS sources should point to
+`localhost?c=...`. Running it locally will give access to a much greater number
+of channels, and is recommended when using the TV guide through twitch chat.
