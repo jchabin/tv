@@ -41,6 +41,7 @@
     height: 100dvh;
     background: #0a1e40;
     overflow: hidden;
+    touch-action: manipulation;
   }
   #title {
     width: 100%;
@@ -276,6 +277,8 @@
     }
 
     document.getElementById("time").innerText = (new Date()).toLocaleString("en-US", {hour: "2-digit", minute: "2-digit", hour12: true}).replace(" ", "").toLowerCase();
+
+    scrollTo(0, 0);
   }
 
   function sscroll(d) {
@@ -287,18 +290,20 @@
     sscroll(e.deltaY);
   }
 
+  const search = document.getElementById("search");
+
   const touches = {};
 
-  window.ontouchstart = e => {
+  window.addEventListener("touchstart", e => {
     scrollVel = 0;
     lastScroll = 0;
     for(let touch of e.changedTouches) {
       touches[touch.identifier] = touch;
     }
-  }
+  });
 
   let lastScroll = 0;
-  window.ontouchmove = (e, end) => {
+  window.addEventListener("touchmove", e => {
     scrollVel = 0;
     lastScroll = 0;
     for(let touch of e.changedTouches) {
@@ -306,17 +311,20 @@
       lastScroll += touches[touch.identifier].clientY - touch.clientY;
       touches[touch.identifier] = touch;
     }
-  }
+    if(channels.contains(e.target)) {
+      search.blur();
+    }
+    e.preventDefault();
+  }, {passive: false});
 
-  window.ontouchend = e => {
+  window.addEventListener("touchend", e => {
     scrollVel = lastScroll;
     for(let touch of e.changedTouches) {
       delete touches[touch.identifier];
     }
-  }
+  });
 
   let searchOpen = false;
-  const search = document.getElementById("search");
   function toggleSearch() {
     if(searchOpen) {
       search.blur();
