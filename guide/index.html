@@ -221,7 +221,7 @@
     }
 
     const SEARCHED_CHANNELS = CHANNELS.map((c, i) => {return {index: i, ...c}}).filter(c =>
-      searchPhrase == "" || (c.title ?? "").toLowerCase().includes(searchPhrase) || (c.channel ?? "").toLowerCase().includes(searchPhrase) || (c.index + "").includes(searchPhrase)
+      searchPhrase == "" || (c.title ?? "").toLowerCase().includes(searchPhrase.toLowerCase()) || (c.channel ?? "").toLowerCase().includes(searchPhrase.toLowerCase()) || (c.index + "").includes(searchPhrase.toLowerCase())
     );
 
 
@@ -332,7 +332,7 @@
       if(search.value != "") {
         cachedScrollPos = scrollPos;
       }
-      searchPhrase = search.value;
+      searchPhrase = search.value.toLowerCase();
       searchOpen = true;
     }
   }
@@ -343,6 +343,6 @@
     } else if(searchPhrase != "" && search.value == "") {
       scrollPos = cachedScrollPos;
     }
-    searchPhrase = search.value;
+    searchPhrase = search.value.toLowerCase();
   }
 </script>
