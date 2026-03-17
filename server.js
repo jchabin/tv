@@ -23,7 +23,10 @@ app.get("/vproxy", (req, res) => {
     forwardHeaders.delete("content-length");
     forwardHeaders.delete("content-encoding");
     if(forwardHeaders.get("location")) {
-      forwardHeaders.set("location", "http://localhost/vproxy?url=" + encodeURIComponent(forwardHeaders.get("location")));
+      const location = forwardHeaders.get("location").match(/^https?:\/\//) ?
+        forwardHeaders.get("location") :
+        r.url.match(/^https?:\/\/[^\/]+/)[0] + forwardHeaders.get("location");
+      forwardHeaders.set("location", "http://localhost/vproxy?url=" + encodeURIComponent(location));
     }
     res.setHeaders(forwardHeaders);
     res.status(r.status);
