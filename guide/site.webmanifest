@@ -1,6 +1,6 @@
 {
-  "name": "Remote",
-  "short_name": "Remote",
+  "name": "TV Guide",
+  "short_name": "TV Guide",
   "icons": [
     {
       "src": "android-chrome-192x192.png",
@@ -13,8 +13,8 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "black",
-  "background_color": "black",
-  "start_url": "/tv",
+  "theme_color": "#0a1e40",
+  "background_color": "#0a1e40",
+  "start_url": "/tv/guide",
   "display": "standalone"
 }
