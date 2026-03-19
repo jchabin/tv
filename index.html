@@ -43,6 +43,8 @@
   icons are from <a href="https://feathericons.com/">Feather</a>.
 </div>
 
+<div id="dots"></div>
+
 <div id="hint">USE <span style="color: #f00">!REMOTE</span> TO CHANGE CHANNEL</div>
 <img id="guide" src="qrcode.svg">
 
@@ -219,6 +221,23 @@
     left: 0;
     display: none;
     max-width: 15dvw;
+  }
+  #dots {
+    position: absolute;
+    padding: max(1dvmin, 8px);
+    bottom: 0;
+    left: 0;
+  }
+  .dot {
+    width: max(1dvmin, 8px);
+    height: max(1dvmin, 8px);
+    border-radius: 100%;
+    margin: .25dvmin;
+    display: inline-block;
+  }
+  .dot.me {
+    border: 2px solid white;
+    margin: calc(.25dvmin - 2px);
   }
 </style>
 <style id="twitch">
@@ -398,7 +417,29 @@
     console.log(id);
 
     if(currentChannel >= 0) sendChannel(currentChannel);
+
+    updateDots();
   });
+
+  room.onPeerLeave(updateDots);
+
+  function updateDots() {
+    const dots = document.getElementById("dots");
+    let ihtml = "";
+
+    for(let id in room.getPeers()) {
+      const hash = id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+      ihtml += `<div class="dot" style="background: hsl(${hash % 360}, 100%, 50%)"></div>`;
+    }
+
+    if(ihtml != "") {
+      const hash = selfId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+      ihtml = `<div class="dot me" style="background: hsl(${hash % 360}, 100%, 50%)"></div>` + ihtml;
+    }
+
+    dots.innerHTML = ihtml;
+  }
+
 
   getChannel(n => {
     if(n == currentChannel) return;
